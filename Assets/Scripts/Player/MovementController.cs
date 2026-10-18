@@ -6,8 +6,11 @@ public class MovementController : MonoBehaviour
 {
     [SerializeField] private sbyte currentTrack = 0;
     [SerializeField] private float torqueAmount = 1.0f;
-    [SerializeField, Range(0f, 100f)] private float playerSpeedModifier = 30.0f;
+    [SerializeField, Min(0f)] private float boostSpeedModifier = 0.3f;
     [SerializeField] private float baseSpeed = 10.0f;
+    [SerializeField, Range(0f, 100f)] private float fuelMeter = 100.0f;
+    [SerializeField] private float fuelPerSecond = 1.0f;
+    [SerializeField, Min(0f)] private float boostFuelModifier = 0.5f;
     [SerializeField] private GameObject[] groundSpriteShapes;
     [SerializeField] private Rigidbody2D rigidBody;
     [SerializeField] private Transform skins;
@@ -20,10 +23,8 @@ public class MovementController : MonoBehaviour
 
     private InputAction moveAction;
     private Vector2 moveInput;
-
     private sbyte targettedTrack = -1;
     private bool isGrounded = false;
-    private float fuelUnits = 100.0f;
 
     private void Start ()
     {
@@ -53,6 +54,7 @@ public class MovementController : MonoBehaviour
         if (isGrounded) Boost();
         else Spin();
         ScheduleSwitch();
+        BurnFuel();
     }
 
     void OnCollisionEnter2D(Collision2D collision)
@@ -60,7 +62,7 @@ public class MovementController : MonoBehaviour
         if (collision.collider == surfaces[currentTrack].collider){
             surfaces[currentTrack].contact = true;
             isGrounded = true;
-            Debug.Log($"Grounded on track {currentTrack}");
+            //Debug.Log($"Grounded on track {currentTrack}");
         } 
         else
         {
@@ -68,12 +70,12 @@ public class MovementController : MonoBehaviour
             for (sbyte i = 0; i < surfaces.Length; i++)
                 if(collision.collider == surfaces[i].collider)
                 {
-                    Debug.LogWarning($"On track {i}");
+                    //Debug.LogWarning($"On track {i}");
                     surfaces[i].contact = true;
                 }
         }
 
-        dumpContacts();
+        //DumpContactPoints();
     }
 
     void OnCollisionExit2D(Collision2D collision)
@@ -82,18 +84,18 @@ public class MovementController : MonoBehaviour
         {
             surfaces[currentTrack].contact = false;
             isGrounded = false;
-            Debug.Log("Now airborne");
+            //Debug.Log("Now airborne");
         } 
         else 
             for (sbyte i = 0; i < surfaces.Length; i++)
                 if(collision.collider == surfaces[i].collider)
                 {
-                    Debug.LogWarning($"Off track {i}");
+                    //Debug.LogWarning($"Off track {i}");
                     surfaces[i].contact = false;
                     break;
                 }
 
-        dumpContacts();
+        //DumpContactPoints();
     }
 
     void OnTriggerEnter2D(Collider2D collider)
@@ -102,7 +104,7 @@ public class MovementController : MonoBehaviour
 
         if (!capsuleCollider.IsTouching(collider))
         {
-            Debug.Log("Box Trigger");
+            //Debug.Log("Box Trigger");
         }
         else if (collider == surfaces[currentTrack].collider)
         {
@@ -119,12 +121,12 @@ public class MovementController : MonoBehaviour
             for (sbyte i = 0; i < surfaces.Length; i++)
                 if(collider == surfaces[i].collider)
                 {
-                    Debug.Log($"Entered track {i}");
+                    //Debug.Log($"Entered track {i}");
                     surfaces[i].contact = true;
                     break;
                 }
 
-        dumpContacts();
+        //DumpContactPoints();
     }
 
     void OnTriggerExit2D(Collider2D collider)
@@ -133,7 +135,7 @@ public class MovementController : MonoBehaviour
         
         if (!capsuleCollider.IsTouching(collider))
         {
-            Debug.Log("Box Trigger");
+            //Debug.Log("Box Trigger");
         }
         else if (collider == surfaces[currentTrack].collider)
         {
@@ -146,19 +148,19 @@ public class MovementController : MonoBehaviour
             {
                 if (i == targettedTrack && rigidBody.linearVelocityY > 0)
                 {
-                    Debug.Log($"Attempting exit switch...");
+                    //Debug.Log($"Attempting exit switch...");
                     AttemptSwitch(i);
                     targettedTrack = -1;
                 }
                 else
                 {
-                    Debug.Log($"Exited track {i}");
+                    //Debug.Log($"Exited track {i}");
                 }
                 surfaces[i].contact = false;
                 break;
             }
 
-        dumpContacts();
+        //DumpContactPoints();
     }
 
     /// <summary>
@@ -167,9 +169,9 @@ public class MovementController : MonoBehaviour
     void Boost()
     {
         if (moveInput.x > 0)
-                surfaces[currentTrack].effector.speed = baseSpeed * (1.0f + (playerSpeedModifier / 100.0f));
+                surfaces[currentTrack].effector.speed = baseSpeed * (1.0f + boostSpeedModifier);
         else if (moveInput.x < 0)
-                surfaces[currentTrack].effector.speed = baseSpeed * (1.0f - (playerSpeedModifier / 100.0f));
+                surfaces[currentTrack].effector.speed = baseSpeed * (1.0f - boostSpeedModifier);
         else
             surfaces[currentTrack].effector.speed = baseSpeed;
     }
@@ -184,7 +186,6 @@ public class MovementController : MonoBehaviour
         else if(moveInput.x < 0)
             rigidBody.AddTorque(torqueAmount);
     }
-
 
     /// <summary>
     /// Checks if the player wants to switch track and then calls the function that checks if it can
@@ -204,9 +205,9 @@ public class MovementController : MonoBehaviour
 
         if (targetTrack >= 0 && targetTrack < surfaces.Length)
         {
-            Debug.Log("BEGIN - User switch");
+            //Debug.Log("BEGIN - User switch");
             targettedTrack = targetTrack;
-            Debug.Log("END - User switch");
+            //Debug.Log("END - User switch");
         }
     }
 
@@ -223,14 +224,14 @@ public class MovementController : MonoBehaviour
         }
         else if (targettedTrack != target)
         {
-            Debug.Log($"Targetting track {target}");
+            //Debug.Log($"Targetting track {target}");
             targettedTrack = target;
         } else
         {
-            Debug.Log("Switch attempt timed out");
+            //Debug.Log("Switch attempt timed out");
         }
 
-        dumpContacts();
+        //DumpContactPoints();
     }
 
     /// <summary>
@@ -239,7 +240,7 @@ public class MovementController : MonoBehaviour
     /// <param name="target">The index of the targeted track</param>
     void SwitchTrack(sbyte target)
     {
-        Debug.Log($"Switching to track {target}");
+        //Debug.Log($"Switching to track {target}");
 
         targettedTrack = -1;
 
@@ -255,6 +256,9 @@ public class MovementController : MonoBehaviour
         SetLayerOrder();
     }
 
+    /// <summary>
+    /// Adjusts the player's sprite sorting order to match its active track
+    /// </summary>
     void SetLayerOrder ()
     {
         if (skins != null) 
@@ -263,13 +267,34 @@ public class MovementController : MonoBehaviour
                     .sortingOrder = (currentTrack + 1) * 10;
     }
 
-    private void dumpContacts()
+    /// <summary>
+    /// Prints through console the platforms in contact with the player
+    /// </summary>
+    private void DumpContactPoints()
     {
         string surfaceContacts = "Contacts:\n\t> ";
-        foreach (var surface in surfaces) 
-            surfaceContacts += surface.contact?"true/":"false/";
+        int i = 0;
+
+        foreach (var surface in surfaces)
+        {
+            surfaceContacts += "index: " + i + ", contact?: " + (surface.contact?"true/":"false/");
+        }
+            
         
         Debug.Log(surfaceContacts);
+    }
+
+    private void BurnFuel ()
+    {
+        float fuelUsage = fuelPerSecond * Time.deltaTime;
+        if(moveInput.x > 0)
+            fuelUsage *= 1 + boostFuelModifier;
+        else if (moveInput.x < 0)
+            fuelUsage *= 1 - (boostFuelModifier * 0.75f);   //fuel savings on slowdown are smaller than the waste on boost
+        
+        fuelMeter = Mathf.Clamp((fuelMeter - fuelUsage), 0.0f, 100.0f);
+
+        Debug.Log($"Fuel Meter: {fuelMeter}%");
     }
 
 }
