@@ -1,4 +1,5 @@
 using System;
+using UnityEngine.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,8 +9,9 @@ public class MovementController : MonoBehaviour
     [SerializeField] private float torqueAmount = 1.0f;
     [SerializeField, Min(0f)] private float boostSpeedModifier = 0.3f;
     [SerializeField] private float baseSpeed = 10.0f;
-    [SerializeField, Range(0f, 100f)] private float fuelMeter = 100.0f;
-    [SerializeField] private float fuelPerSecond = 1.0f;
+    [SerializeField] private Slider fuelMeter;
+    [SerializeField, Range(0f, 100f)] private float fuelLeft = 100.0f;
+    [SerializeField] private float fuelPerSecond = 25.0f;
     [SerializeField, Min(0f)] private float boostFuelModifier = 0.5f;
     [SerializeField] private GameObject[] groundSpriteShapes;
     [SerializeField] private Rigidbody2D rigidBody;
@@ -281,7 +283,7 @@ public class MovementController : MonoBehaviour
         }
             
         
-        Debug.Log(surfaceContacts);
+        //Debug.Log(surfaceContacts);
     }
 
     private void BurnFuel ()
@@ -292,9 +294,36 @@ public class MovementController : MonoBehaviour
         else if (moveInput.x < 0)
             fuelUsage *= 1 - (boostFuelModifier * 0.75f);   //fuel savings on slowdown are smaller than the waste on boost
         
-        fuelMeter = Mathf.Clamp((fuelMeter - fuelUsage), 0.0f, 100.0f);
+        fuelLeft = Mathf.Clamp(fuelLeft - fuelUsage, 0.0f, 100.0f);
 
-        Debug.Log($"Fuel Meter: {fuelMeter}%");
+        if (fuelLeft == 0.0f) foreach(var surface in surfaces){
+            surface.effector.enabled = false;
+            transform.parent
+                .parent
+                .Find("ParticleSystems")
+                .GetComponentInChildren<ParticleSystem>()
+                .Stop();
+            transform.parent
+                .parent
+                .Find("Skins")
+                .GetComponentInChildren<Animator>()
+                .enabled = false;
+                Invoke(nameof(Reload), 2);
+        }
+
+        fuelMeter.value = fuelLeft / 100.0f;
+        //TODO: Display Fuel in HUD
+        //Debug.Log($"Fuel Meter: {fuelMeter}%");
+    }
+
+    private void Reload()
+    {
+        MenuController.Reload();
+    }
+
+    public void AddFuel (float amount)
+    {
+        fuelLeft = Mathf.Clamp(fuelLeft + amount, 0.0f, 100.0f);
     }
 
 }

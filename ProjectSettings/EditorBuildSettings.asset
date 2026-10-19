@@ -8,6 +8,33 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MainMenu.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
+  - enabled: 1
+    path: Assets/Scenes/Level1.unity
+    guid: 7ebe057dfa2499b4bb498fc659f9985f
+  - enabled: 1
+    path: Assets/Scenes/Level2.unity
+    guid: 13790bb0786b46d4eba405acca644c72
+  - enabled: 1
+    path: Assets/Scenes/Level3.unity
+    guid: 5eee3416a5c0f1e4b812c57ac189c07b
+  - enabled: 1
+    path: Assets/Scenes/Level4.unity
+    guid: 18a33a654fc488448a1e2719eaa436a1
+  - enabled: 1
+    path: Assets/Scenes/Level5.unity
+    guid: 282e43233e4ae2a42bfe5cf347247c92
+  - enabled: 1
+    path: Assets/Scenes/LevelSelection.unity
+    guid: 5e81459f651efcd43a9456cec20ed184
+  - enabled: 1
+    path: Assets/Scenes/CharacterSelection.unity
+    guid: 117cfb589b208454ebd5b87124db3cb6
+  - enabled: 1
+    path: Assets/Scenes/Credits.unity
+    guid: 705a48cbc34af504c9536130ba8e0851
+  - enabled: 1
+    path: Assets/Scenes/Guide.unity
+    guid: 7e13ef8e2857baf48a982842bbb0e677
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
