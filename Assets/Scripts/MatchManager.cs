@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PauseController : MonoBehaviour
+public class MatchManager : MonoBehaviour
 {
     [SerializeField] private Canvas pauseMenu;
 

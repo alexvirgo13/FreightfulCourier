@@ -59,4 +59,12 @@ public class MenuController : MonoBehaviour
         );
         Time.timeScale = 1f;
     }
+
+    public static void SelectCharacter(int characterIndex)
+    {
+        // Store the selected character index in PlayerPrefs
+        PlayerPrefs.SetInt("SelectedCharacter", characterIndex);
+        PlayerPrefs.Save(); // Save the PlayerPrefs to ensure the selection is persisted
+        OpenMenu();
+    }
 }

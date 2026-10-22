@@ -15,7 +15,8 @@ public class MovementController : MonoBehaviour
     [SerializeField, Min(0f)] private float boostFuelModifier = 0.5f;
     [SerializeField] private GameObject[] groundSpriteShapes;
     [SerializeField] private Rigidbody2D rigidBody;
-    [SerializeField] private Transform skins;
+    [SerializeField] private Transform skins;    
+    [SerializeField] private int flipPoints = 350;
     
     private (
         SurfaceEffector2D effector, 
@@ -25,8 +26,14 @@ public class MovementController : MonoBehaviour
 
     private InputAction moveAction;
     private Vector2 moveInput;
+    private ScoreManager scoreManager;
+    private float previousRotation;
+    private float totalRotation;
+    private int flipCount;
+
     private sbyte targettedTrack = -1;
-    private bool isGrounded = false;
+    private bool isGrounded = false, isAlive = true, freeFuel = false;
+    private int activePowerUps;
 
     private void Start ()
     {
@@ -48,6 +55,10 @@ public class MovementController : MonoBehaviour
         if(skins == null)
             skins = transform.parent.parent.GetChild(1).Find("Skins");
         SetLayerOrder();
+
+        scoreManager = transform.parent
+                .parent
+                .GetComponent<ScoreManager>();
     }
 
     private void Update ()
@@ -57,6 +68,7 @@ public class MovementController : MonoBehaviour
         else Spin();
         ScheduleSwitch();
         BurnFuel();
+        CalculateFlips();
     }
 
     void OnCollisionEnter2D(Collision2D collision)
@@ -151,6 +163,7 @@ public class MovementController : MonoBehaviour
                 if (i == targettedTrack && rigidBody.linearVelocityY > 0)
                 {
                     //Debug.Log($"Attempting exit switch...");
+                    isGrounded = false;
                     AttemptSwitch(i);
                     targettedTrack = -1;
                 }
@@ -183,6 +196,7 @@ public class MovementController : MonoBehaviour
     /// </summary>
     void Spin()
     {
+        if (!isAlive) return;
         if(moveInput.x > 0)
             rigidBody.AddTorque(-torqueAmount);
         else if(moveInput.x < 0)
@@ -288,6 +302,8 @@ public class MovementController : MonoBehaviour
 
     private void BurnFuel ()
     {
+        if (freeFuel) return;
+
         float fuelUsage = fuelPerSecond * Time.deltaTime;
         if(moveInput.x > 0)
             fuelUsage *= 1 + boostFuelModifier;
@@ -296,24 +312,13 @@ public class MovementController : MonoBehaviour
         
         fuelLeft = Mathf.Clamp(fuelLeft - fuelUsage, 0.0f, 100.0f);
 
-        if (fuelLeft == 0.0f) foreach(var surface in surfaces){
-            surface.effector.enabled = false;
-            transform.parent
-                .parent
-                .Find("ParticleSystems")
-                .GetComponentInChildren<ParticleSystem>()
-                .Stop();
-            transform.parent
-                .parent
-                .Find("Skins")
-                .GetComponentInChildren<Animator>()
-                .enabled = false;
+        if (fuelLeft == 0.0f) {
+                Limp();
                 Invoke(nameof(Reload), 2);
         }
 
         fuelMeter.value = fuelLeft / 100.0f;
-        //TODO: Display Fuel in HUD
-        //Debug.Log($"Fuel Meter: {fuelMeter}%");
+        
     }
 
     private void Reload()
@@ -324,6 +329,90 @@ public class MovementController : MonoBehaviour
     public void AddFuel (float amount)
     {
         fuelLeft = Mathf.Clamp(fuelLeft + amount, 0.0f, 100.0f);
+    }
+
+    /// <summary>
+    /// Stops smoke particles, train animations and surface effectors.
+    /// </summary>
+    public void Limp()
+    {
+        foreach (var surface in surfaces) surface.effector.enabled = false;
+
+        isAlive = false;
+
+        transform.parent
+            .parent
+            .Find("ParticleSystems")
+            .GetComponentInChildren<ParticleSystem>()
+            .Stop();
+
+        transform.parent
+            .parent
+            .Find("Skins")
+            .GetComponentInChildren<Animator>()
+            .enabled = false;
+    }
+
+    /// <summary>
+    /// Measures the number of flips the player performs.
+    /// </summary>
+    void CalculateFlips()
+    {
+        float currentRotation = transform.rotation.eulerAngles.z;
+        totalRotation += Mathf.DeltaAngle(previousRotation, currentRotation);
+        if (Mathf.Abs(totalRotation) > 340f)
+        {
+            flipCount++;
+            scoreManager.BonusPoints(flipCount * flipPoints); // Update the score in the ScoreManager
+            totalRotation = 0f; // Reset the total rotation after a flip is detected
+        }
+        previousRotation = currentRotation;
+    }
+
+     public void ApplyPowerUp(PowerUpScriptableObject powerUpData)
+    {
+        activePowerUps++;
+        switch (powerUpData.PowerUpType)
+        {
+            case "Boost":
+                boostSpeedModifier += powerUpData.PowerUpValue;
+                boostFuelModifier += powerUpData.PowerUpValue;
+                break;
+            case "MoonG":
+                rigidBody.gravityScale -= powerUpData.PowerUpValue;
+                torqueAmount += powerUpData.PowerUpValue;
+                break;
+            case "Freeze":
+                scoreManager.FreezeCounter();
+                freeFuel = true;
+                break;
+            default:
+                Debug.LogWarning($"Unknown power-up type: {powerUpData.PowerUpType}");
+                break;
+        }
+    }
+
+    public void DeactivatePowerUp(PowerUpScriptableObject powerUpData)
+    {
+        activePowerUps--;
+        if (activePowerUps == 0) switch (powerUpData.PowerUpType)
+        {
+            case "Boost":
+                boostSpeedModifier -= powerUpData.PowerUpValue;
+                boostFuelModifier -= powerUpData.PowerUpValue;
+                break;
+            case "MoonG":
+                rigidBody.gravityScale += powerUpData.PowerUpValue;
+                torqueAmount -= powerUpData.PowerUpValue;
+                break;
+            case "Freeze":
+                scoreManager.UnfreezeCounter();
+                freeFuel = false;
+                break;
+            default:
+                Debug.LogWarning($"Unknown power-up type: {powerUpData.PowerUpType}");
+                break;
+        }
     }
 
 }
